@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="גיי-ליאס">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#C8352A">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>גיי-ליאס</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:Arial,sans-serif;background:#f4f4f4;min-height:100vh}
+.screen{width:100%;max-width:480px;margin:0 auto;padding:1rem;direction:rtl}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;max-width:480px;margin:0 auto;direction:rtl}
+.btn{border:none;border-radius:24px;padding:16px 40px;font-size:18px;font-weight:700;cursor:pointer;width:100%;display:block;text-align:center;transition:opacity .12s}
+.btn:active{opacity:.78}
+.btn-gray{background:#fff;border:1px solid #ddd;color:#777;border-radius:20px;padding:9px 18px;font-size:13px;cursor:pointer}
+.team-score{border-radius:14px;padding:11px 14px;text-align:center;flex:1}
+.score-name{font-size:12px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score-num{font-size:30px;font-weight:800}
+.card-wrap{background:#fff;border-radius:16px;border:1px solid #e0e0e0;overflow:hidden;width:100%;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.word-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #f0f0f0;cursor:pointer;user-select:none;min-height:52px;transition:background .15s}
+.word-row:last-of-type{border-bottom:none}
+.word-row:active{opacity:.72}
+.badge{width:38px;height:38px;border-radius:19px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:800;color:#fff;transition:background .18s}
+.word-txt{font-size:20px;font-weight:500;flex:1;text-align:right;transition:all .18s}
+.card-num{text-align:left;padding:5px 13px 7px;font-size:11px;color:#ccc;font-family:monospace;background:#fff}
+.timer-bar{height:11px;background:#eaeaea;border-radius:6px;overflow:hidden;margin-bottom:9px}
+.timer-fill{height:100%;border-radius:6px;transition:width 1s linear,background .5s}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;gap:6px}
+.stat-pill{background:#f0f0f0;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600}
+.pass-box{background:#f7f7f7;border-radius:14px;padding:18px;text-align:center;width:100%;margin:14px 0;border:1px solid #eee}
+.input-wrap{width:100%;margin-bottom:13px;text-align:right}
+.input-wrap label{display:block;font-size:13px;color:#888;margin-bottom:6px}
+.input-wrap input{width:100%;font-size:17px;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;direction:rtl;text-align:right;background:#fff;color:#111;outline:none}
+.input-wrap input:focus{border-color:#C8352A}
+.scores-row{display:flex;gap:10px;width:100%;margin-bottom:16px}
+.hist-card{background:#fff;border-radius:12px;border:1px solid #e8e8e8;margin-bottom:10px;overflow:hidden}
+.hist-header{padding:7px 12px;font-size:12px;color:#999;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between}
+.hist-words{display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px}
+.word-pill{border-radius:20px;padding:5px 12px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.auto-banner{text-align:center;font-size:13px;font-weight:700;padding:7px;border-radius:8px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const CARDS=[
+["גאה","שפגאט","חופה","גריינדר","קונפטי","שֵר","אקטיביזם","דב"],
+["ארון","עקבים","טינדר","פונדקאות","ויאגרה","ליידי-גאגא","מצעד","שוגר-דדי"],
+["לסבית","ג'קוזי","ברמן","קבלה","ריקוד","טוויינק","נצנצים","אפליקציה"],
+["ביסקסואל","חדר-חושך","מדים","פרידה","מסיבה","מדונה","קשת","אוטר"],
+["טרנסג'נדר","גלורי-הול","עורך-דין","שיער-חזה","נשיקה","ביונסה","גאווה","דאדי"],
+["קווירי","פופרס","טייס","אהבה","קרוזינג","ריטה","זכויות","ורסטילי"],
+["פנסקסואל","קוקטייל","מציל","מונוגמי","דראג","בריטני","קהילה","זאב"],
+["לא-בינארי","לוקר","קצין","פוליאמורי","פסטיבל","עופרה-חזה","מסך","קאב"],
+["מלכת-דרג","ספא","חייל","בגידה","חוף","מריה-קארי","משפחה-נבחרת","אקטיבי"],
+["דב","קמגרה","בר","אימוץ","רומן","שחקן","מחאה","פסיבי"],
+["זאב","מסדרון","ג'ין","טבעת","הופעה","כתר","חיפוש","גמיש"],
+["טוויינק","קיטור","שישי-בלילה","תינוק","קולנוע","פאה","פרופיל","מה-מציע"],
+["אוטר","מגבת","תל-אביב","שני-אבות","סדרה","עקבים","ונצ'ד","תלוי"],
+["דאדי","שעווה","לירד","שתי-אמהות","שיר","תלבושת","הודעה","מוביל"],
+["קאב","בוטוקס","גאון","הורים","ריקוד","שמלה","מאץ'","נמשך"],
+["ורסטילי","לייזר","דיזנגוף","ילד","כוכבת","אופנה","תמונה","ורסטייל"],
+["גריינדר","גבות","פלורנטין","אהבה","במה","תכשיטים","חסום","אקטיביזם"],
+["טינדר","ניחוח","חולות","חגיגה","זמר","תחפושת","כימיה","קהילה"],
+["מצעד","טיפול","הטיילת","זכויות","רקדן","סטייל","בלא-ראש","מסיבה"],
+["חדר-חושך","עור","מגרש","שינוי","שחקן","מראה","שליחה","מועדון"],
+["גלורי-הול","אפרסק","שירותים","מחיאות-כפיים","ברמן","לבוש","גודל","לילה"],
+["קרוזינג","אגס","שפיך","קבלה","פרס","שיער","מידות","שתייה"],
+["פופרס","חציל","ספידו","הצבעה","קול","יופי","הצעה","בוקר"],
+["שוגר-דדי","תחת","שיזוף","חוק","בימה","כוח","אנונימי","אחרי"],
+["בדסמ","כריות","פירסינג","הפגנה","מוזיקה","דרמה","פנים","חברים"],
+["רתמה","שוקולד","קעקוע","מאבק","מוגזם","מושלם","זמן","תמיכה"],
+["אזיקים","פרי","גוף","נסובה","ורוד","עצבים","ירד","ביחד"],
+["קולר","עיגול","שרירים","ארגון","גיידאר","מלכה","נעלם","נפש"],
+["ספאנקינג","פלאג","מטופח","קבוצת-תמיכה","נודיסטים","רכילות","שם","חגים"],
+["כפפות","לוב","כושר","פעיל","חוף","פתח-פה","גיל","בחירה"],
+["מציצה","ירי","בישום","מרכז-גאווה","פסטיבל","עבודה","מעמד","אהבה"],
+["חדירה","לבלוע","עיצוב","עזרה","קרנבל","מיוחד","חזרה","קהילה"],
+["גמירה","מהיר","חולצה","שייכות","מצעד","נפלא","לב-שבור","שיר"],
+["ויאגרה","נשיכה","תיק","הבנה","צעידה","עוצמה","שקר","קולנוע"],
+["קמגרה","חום","תכשיט","מגן","שנה","כוכב","כאב","מסך"],
+["ג'קוזי","תשוקה","קשת","חבר","יוני","דרמה","דייט","אהבה"],
+["לוקר","לילה","מדבקה","משפחה","חגיגה","הופעה","חיפוש","נישואים"],
+["מגבת","גוף","ברדס","ביחד","שינוי","כתר","פרופיל","רומן"],
+["קיטור","חום","אביזר","תמיכה","מחאה","שחקן","הודעה","זוגיות"],
+["מסדרון","מהיר","קשת","אהבה","זכויות","זמר","ונצ'ד","פרידה"],
+["פלורנטין","דב","טבעת","בריטני","קבלה","ג'ין","רתמה","תינוק"],
+["תל-אביב","דאדי","אימוץ","מדונה","אקטיביזם","קוקטייל","אופנה","ילד"],
+["גיידאר","טוויינק","פונדקאות","ביונסה","שינוי","לירד","סטייל","הורים"],
+["שפגאט","זאב","חופה","שֵר","קהילה","שישי-בלילה","שיער","תעודה"],
+["דראג","אוטר","נשיקה","עופרה-חזה","אהבה","מגרש","לייזר","ספר"],
+["ורסטייל","קאב","סדרה","ריטה","מסיבה","שירותים","גבות","ארנק"],
+["אקטיבי","ורסטילי","קולנוע","ליידי-גאגא","ריקוד","שפיך","בוטוקס","הורמונים"],
+["פסיבי","גמיש","מסך","מריה-קארי","חברים","גלגלת","טיפול","מכנסיים"],
+["לא-בינארי","דיזנגוף","ברמן","פסטיבל","כוכבת","פלאג","מטופח","תספורת"],
+["קווירי","חולות","טייס","חגיגה","מלכה","לוב","ספא","נעליים"],
+];
+
+// word states: 0=neutral, 1=guessed✅, 2=skipped⏭
+const RED="#C8352A", GREEN="#1a9668", GRAY="#999", BLUE="#1A6FBB";
+const STATE_COLOR=[RED, GREEN, GRAY];
+const STATE_ICON=["","✓","⏭"];
+
+function tc(i){return i===0?RED:BLUE;}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+let S={
+  phase:"setup",
+  teams:["🔴 קבוצה 1","🔵 קבוצה 2"],
+  scores:[0,0],
+  team:0,
+  order:shuffle([...Array(CARDS.length).keys()]),
+  pos:0,
+  ws:[0,0,0,0,0,0,0,0],   // word states for current card
+  history:[],              // [{words,states,num}] cards completed this turn
+  time:60,
+  tid:null,
+  advancing:false
+};
+
+function curCard(){return CARDS[S.order[S.pos%CARDS.length]];}
+function cn(){return String(S.pos+1).padStart(3,"0");}
+function stopTimer(){clearInterval(S.tid);S.tid=null;}
+function turnScore(){
+  return S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0)
+       + S.ws.filter(s=>s===1).length;
+}
+function allDone(){return S.ws.every(s=>s!==0);}
+
+function startTimer(){
+  stopTimer();
+  S.tid=setInterval(()=>{
+    if(S.advancing)return;
+    S.time--;
+    tickUI();
+    if(S.time<=0){
+      stopTimer();
+      // save current card as-is
+      S.history.push({words:[...curCard()],states:[...S.ws],num:cn()});
+      S.phase="round_end";
+      render();
+    }
+  },1000);
+}
+
+function tickUI(){
+  const fill=document.getElementById("tfill");
+  const num=document.getElementById("tnum");
+  if(!fill||!num)return;
+  const col=S.time>20?GREEN:S.time>10?"#e8832a":RED;
+  fill.style.width=(Math.max(0,S.time)/60*100)+"%";
+  fill.style.background=col;
+  num.textContent=S.time;
+  num.style.color=col;
+}
+function updateStats(){
+  const g=document.getElementById("stat-g");
+  const sk=document.getElementById("stat-s");
+  if(g)g.textContent="✅ "+turnScore();
+  if(sk){
+    const skips=S.history.reduce((a,h)=>a+h.states.filter(s=>s===2).length,0)+S.ws.filter(s=>s===2).length;
+    sk.textContent="⏭ "+skips;
+  }
+}
+
+function advanceCard(){
+  if(S.advancing)return;
+  S.advancing=true;
+  S.history.push({words:[...curCard()],states:[...S.ws],num:cn()});
+  S.pos++;
+  S.ws=[0,0,0,0,0,0,0,0];
+  S.advancing=false;
+  if(S.pos>=CARDS.length){
+    stopTimer();
+    S.phase="round_end";
+    render();
+    return;
+  }
+  // Flash banner then render new card
+  const banner=document.getElementById("auto-banner");
+  if(banner){banner.style.display="block";setTimeout(()=>{render();},400);}
+  else render();
+}
+
+function render(){
+  const R=document.getElementById("root");
+  const {phase,teams,scores,team}=S;
+  const col=tc(team);
+
+  if(phase==="setup"){
+    R.innerHTML=`<div class="center">
+<div style="font-size:56px;margin-bottom:8px">🏳️‍🌈</div>
+<div style="font-size:32px;font-weight:800;color:${RED};margin-bottom:4px">גיי-ליאס</div>
+<div style="font-size:14px;color:#888;margin-bottom:26px">המהדורה הגאה של אליאס</div>
+<div class="input-wrap">
+  <label>🔴 שם קבוצה 1</label>
+  <input id="t0" value="${S.teams[0].replace(/^.. /,"")}" placeholder="שם הקבוצה">
+</div>
+<div class="input-wrap">
+  <label>🔵 שם קבוצה 2</label>
+  <input id="t1" value="${S.teams[1].replace(/^.. /,"")}" placeholder="שם הקבוצה">
+</div>
+<button class="btn" style="background:${RED};color:#fff;margin-top:6px" onclick="goStart()">🏳️‍🌈 בואו נשחק!</button>
+<div style="font-size:12px;color:#bbb;margin-top:16px;text-align:center">50 כרטיסיות · 8 מילים · 60 שניות לסיבוב</div>
+</div>`;
+    return;
+  }
+
+  if(phase==="pre_round"){
+    R.innerHTML=`<div class="screen" style="display:flex;flex-direction:column;min-height:100vh;justify-content:center">
+<div class="scores-row">
+  ${teams.map((n,i)=>`<div class="team-score" style="background:${i===team?col:"#e8e8e8"};color:${i===team?"#fff":"#777"}">
+    <div class="score-name">${n}</div><div class="score-num">${scores[i]}</div>
+  </div>`).join("")}
+</div>
+<div class="pass-box">
+  <div style="font-size:14px;color:#888;margin-bottom:8px">📱 העבר את הטבלט אל המקריא של</div>
+  <div style="font-size:30px;font-weight:800;color:${col};margin-bottom:8px">${teams[team]}</div>
+  <div style="font-size:13px;color:#888">המקריא מסביר — הצוות מנחש</div>
+</div>
+<div style="text-align:center;font-size:13px;color:#bbb;margin-bottom:18px">כרטיסייה ${S.pos+1} מתוך ${CARDS.length}</div>
+<button class="btn" style="background:${col};color:#fff" onclick="startRound()">▶ התחל סיבוב!</button>
+</div>`;
+    return;
+  }
+
+  if(phase==="playing"){
+    const words=curCard();
+    const pct=Math.max(0,S.time/60*100);
+    const tcol=S.time>20?GREEN:S.time>10?"#e8832a":RED;
+    const cardsThisTurn=S.history.length+1;
+    const rows=words.map((w,i)=>{
+      const st=S.ws[i];
+      const bg=st===1?"#f0fdf8":st===2?"#f7f7f7":"#fff";
+      const bc=STATE_COLOR[st];
+      const tc2=st===1?GREEN:st===2?"#bbb":"#111";
+      const td=st===2?"line-through":"none";
+      return `<div class="word-row" id="wr${i}" onclick="tapWord(${i})" style="background:${bg}">
+  <div class="badge" id="b${i}" style="background:${bc}">${st===0?i+1:STATE_ICON[st]}</div>
+  <span class="word-txt" id="wt${i}" style="color:${tc2};text-decoration:${td}">${w}</span>
+</div>`;
+    }).join("");
+    R.innerHTML=`<div class="screen">
+<div id="auto-banner" class="auto-banner" style="display:none;background:#e8f8f0;color:${GREEN}">✅ כרטיסייה הושלמה! עוברים...</div>
+<div class="timer-bar"><div id="tfill" class="timer-fill" style="width:${pct}%;background:${tcol}"></div></div>
+<div class="hdr">
+  <button class="btn-gray" onclick="endRound()">⏹ סיים</button>
+  <span class="stat-pill" id="stat-g" style="color:${GREEN}">✅ ${turnScore()}</span>
+  <span class="stat-pill" id="stat-s" style="color:${GRAY}">⏭ 0</span>
+  <div style="font-size:26px;font-weight:800;min-width:40px;text-align:center;color:${tcol}" id="tnum">${S.time}</div>
+</div>
+<div style="font-size:11px;color:#bbb;text-align:center;margin-bottom:7px">כרטיסייה ${S.pos+1} · סיבוב ${cardsThisTurn}</div>
+<div class="card-wrap">${rows}<div class="card-num">${cn()}</div></div>
+<div style="font-size:11px;color:#bbb;text-align:center;margin-top:8px">לחיצה אחת = ניחשו ✅ &nbsp;|&nbsp; לחיצה שנייה = דלג ⏭ &nbsp;|&nbsp; שלישית = ביטול</div>
+</div>`;
+    updateStats();
+    return;
+  }
+
+  if(phase==="round_end"){
+    const col=tc(team);
+    const total=S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0);
+    const histHTML=S.history.map((h,hi)=>{
+      const correct=h.states.filter(s=>s===1).length;
+      const words=h.words.map((w,wi)=>{
+        const st=h.states[wi];
+        const bg=st===1?"#e8f8f0":st===2?"#f7f7f7":"#fff0f0";
+        const fc=st===1?GREEN:st===2?"#bbb":RED;
+        return `<span class="word-pill" style="background:${bg};color:${fc};border:1px solid ${bg=="#fff0f0"?"#fdd":"#e0e0e0"}" onclick="toggleHist(${hi},${wi})">${w} ${st===1?"✅":st===2?"⏭":"❌"}</span>`;
+      }).join("");
+      return `<div class="hist-card">
+  <div class="hist-header"><span>כרטיסייה ${h.num}</span><span style="color:${GREEN};font-weight:700">+${correct}</span></div>
+  <div class="hist-words">${words}</div>
+</div>`;
+    }).join("");
+    R.innerHTML=`<div class="screen">
+<div style="text-align:center;padding:10px 0 6px">
+  <div style="font-size:13px;color:#888">סיום תור · ${teams[team]}</div>
+  <div id="total-pts" style="font-size:56px;font-weight:900;color:${col};line-height:1.15">${total}</div>
+  <div style="font-size:13px;color:#888">נקודות (לחץ מילה לתיקון)</div>
+</div>
+${histHTML}
+<button class="btn" style="background:${col};color:#fff;margin-top:4px" onclick="confirmRound()">📱 אשר והעבר לקבוצה הבאה ←</button>
+</div>`;
+    return;
+  }
+
+  if(phase==="final"){
+    const w=scores[0]>scores[1]?0:scores[1]>scores[0]?1:-1;
+    R.innerHTML=`<div class="center">
+<div style="font-size:72px;margin-bottom:8px">${w>=0?"🏆":"🤝"}</div>
+<div style="font-size:30px;font-weight:800;color:${w>=0?tc(w):"#555"};margin-bottom:4px">
+  ${w>=0?teams[w]+" ניצחו!":"תיקו!"}
+</div>
+<div class="scores-row" style="margin:22px 0;width:100%">
+  ${teams.map((n,i)=>`<div class="team-score" style="background:${tc(i)};color:#fff;opacity:${w>=0&&w!==i?.6:1}">
+    <div class="score-name">${n}</div><div class="score-num">${scores[i]}</div>
+  </div>`).join("")}
+</div>
+<button class="btn" style="background:${RED};color:#fff" onclick="restart()">🌈 משחק חדש</button>
+</div>`;
+    return;
+  }
+}
+
+window.goStart=function(){
+  S.teams=["🔴 "+(document.getElementById("t0").value||"קבוצה 1"),
+            "🔵 "+(document.getElementById("t1").value||"קבוצה 2")];
+  S.phase="pre_round"; render();
+};
+
+window.startRound=function(){
+  S.ws=[0,0,0,0,0,0,0,0];
+  S.history=[];
+  S.time=60;
+  S.advancing=false;
+  S.phase="playing";
+  render();
+  startTimer();
+};
+
+window.endRound=function(){
+  stopTimer();
+  S.history.push({words:[...curCard()],states:[...S.ws],num:cn()});
+  S.phase="round_end"; render();
+};
+
+window.tapWord=function(i){
+  if(S.phase!=="playing"||S.advancing)return;
+  S.ws[i]=(S.ws[i]+1)%3;
+  const st=S.ws[i];
+  const row=document.getElementById("wr"+i);
+  const badge=document.getElementById("b"+i);
+  const txt=document.getElementById("wt"+i);
+  const bg=st===1?"#f0fdf8":st===2?"#f7f7f7":"#fff";
+  const bc=STATE_COLOR[st];
+  if(row)row.style.background=bg;
+  if(badge){badge.style.background=bc;badge.textContent=st===0?i+1:STATE_ICON[st];}
+  if(txt){
+    txt.style.color=st===1?GREEN:st===2?"#bbb":"#111";
+    txt.style.textDecoration=st===2?"line-through":"none";
+  }
+  updateStats();
+  if(allDone()){
+    setTimeout(advanceCard, 420);
+  }
+};
+
+window.toggleHist=function(hi,wi){
+  // In round_end: toggle between guessed(1) and skipped(2)
+  const h=S.history[hi];
+  h.states[wi]=h.states[wi]===1?2:1;
+  const total=S.history.reduce((a,h2)=>a+h2.states.filter(s=>s===1).length,0);
+  const pt=document.getElementById("total-pts");
+  if(pt)pt.textContent=total;
+  // re-render just that pill
+  const col=tc(S.team);
+  // full re-render easier
+  const R=document.getElementById("root");
+  const histHTML=S.history.map((h2,hi2)=>{
+    const correct=h2.states.filter(s=>s===1).length;
+    const words=h2.words.map((w,wi2)=>{
+      const st=h2.states[wi2];
+      const bg=st===1?"#e8f8f0":"#f7f7f7";
+      const fc=st===1?GREEN:"#bbb";
+      return `<span class="word-pill" style="background:${bg};color:${fc};border:1px solid #e0e0e0" onclick="toggleHist(${hi2},${wi2})">${w} ${st===1?"✅":"⏭"}</span>`;
+    }).join("");
+    return `<div class="hist-card">
+  <div class="hist-header"><span>כרטיסייה ${h2.num}</span><span style="color:${GREEN};font-weight:700">+${correct}</span></div>
+  <div class="hist-words">${words}</div>
+</div>`;
+  }).join("");
+  R.innerHTML=`<div class="screen">
+<div style="text-align:center;padding:10px 0 6px">
+  <div style="font-size:13px;color:#888">סיום תור · ${S.teams[S.team]}</div>
+  <div id="total-pts" style="font-size:56px;font-weight:900;color:${col};line-height:1.15">${total}</div>
+  <div style="font-size:13px;color:#888">נקודות (לחץ מילה לתיקון)</div>
+</div>
+${histHTML}
+<button class="btn" style="background:${col};color:#fff;margin-top:4px" onclick="confirmRound()">📱 אשר והעבר לקבוצה הבאה ←</button>
+</div>`;
+};
+
+window.confirmRound=function(){
+  const pts=S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0);
+  S.scores[S.team]+=pts;
+  const np=S.pos+1;
+  if(np>=CARDS.length){S.scores;S.phase="final";}
+  else{S.pos=np;S.team=1-S.team;S.phase="pre_round";}
+  render();
+};
+
+window.restart=function(){
+  S={phase:"pre_round",teams:S.teams,scores:[0,0],team:0,
+    order:shuffle([...Array(CARDS.length).keys()]),pos:0,
+    ws:[0,0,0,0,0,0,0,0],history:[],time:60,tid:null,advancing:false};
+  render();
+};
+
+render();
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").then(r=>console.log("SW registered")).catch(e=>console.log("SW error",e));
+  });
+}
+</script>
+</body>
+</html>
