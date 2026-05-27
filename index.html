@@ -114,7 +114,6 @@ let S={
   phase:"setup",
   teams:["🔴 קבוצה 1","🔵 קבוצה 2"],
   scores:[0,0],
-  numTeams:2,
   team:0,
   order:shuffle([...Array(CARDS.length).keys()]),
   pos:0,
@@ -312,18 +311,10 @@ ${histHTML}
   }
 }
 
-window.toggleTeam3=function(){
-  const cb=document.getElementById("enable3");
-  document.getElementById("team3-wrap").style.display=cb.checked?"block":"none";
-};
 window.goStart=function(){
-  const cb=document.getElementById("enable3");
-  const use3=cb&&cb.checked;
   S.teams=["🔴 "+(document.getElementById("t0").value||"קבוצה 1"),
             "🔵 "+(document.getElementById("t1").value||"קבוצה 2")];
-  if(use3) S.teams.push("🟢 "+(document.getElementById("t2").value||"קבוצה 3"));
-  S.scores=S.teams.map(()=>0);
-  S.numTeams=S.teams.length;
+  S.scores=[0,0];
   S.phase="pre_round"; render();
 };
 
@@ -410,7 +401,7 @@ window.confirmRound=function(){
 };
 
 window.restart=function(){
-  S={phase:"pre_round",teams:S.teams,scores:S.teams.map(()=>0),numTeams:S.teams.length,team:0,
+  S={phase:"pre_round",teams:S.teams,scores:[0,0],team:0,
     order:shuffle([...Array(CARDS.length).keys()]),pos:0,
     ws:[0,0,0,0,0,0,0,0],history:[],time:60,tid:null,advancing:false};
   render();
