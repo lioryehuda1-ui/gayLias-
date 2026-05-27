@@ -15,12 +15,12 @@
 body{font-family:Arial,sans-serif;background:#f4f4f4;min-height:100vh}
 .page{width:100%;max-width:480px;margin:0 auto;padding:1rem;direction:rtl}
 .center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;max-width:480px;margin:0 auto;direction:rtl}
-.btn{border:none;border-radius:24px;padding:16px 40px;font-size:18px;font-weight:700;cursor:pointer;width:100%;display:block;text-align:center}
+.btn{border:none;border-radius:24px;padding:16px 40px;font-size:18px;font-weight:700;cursor:pointer;width:100%;display:block;text-align:center;margin-bottom:0}
 .btn:active{opacity:.78}
-.btn-sm{background:#fff;border:1px solid #ddd;color:#777;border-radius:20px;padding:9px 18px;font-size:13px;cursor:pointer;border:none}
-.score-box{border-radius:14px;padding:11px 14px;text-align:center;flex:1}
-.score-name{font-size:12px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.score-num{font-size:30px;font-weight:800}
+.btn-sm{border:none;background:#eee;color:#777;border-radius:20px;padding:9px 18px;font-size:13px;cursor:pointer}
+.sbox{border-radius:14px;padding:11px 14px;text-align:center;flex:1}
+.sname{font-size:12px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.snum{font-size:30px;font-weight:800}
 .card{background:#fff;border-radius:16px;border:1px solid #e0e0e0;overflow:hidden;width:100%;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .wrow{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #f0f0f0;cursor:pointer;user-select:none;min-height:52px}
 .wrow:last-of-type{border-bottom:none}
@@ -45,6 +45,8 @@ body{font-family:Arial,sans-serif;background:#f4f4f4;min-height:100vh}
 .cb-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer}
 .cb-row input{width:22px;height:22px;cursor:pointer;accent-color:#1a9668}
 .cb-row label{font-size:15px;color:#555;cursor:pointer}
+.instr-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:15px;line-height:1.5}
+.instr-icon{font-size:20px;flex-shrink:0;margin-top:2px}
 </style>
 </head>
 <body>
@@ -103,306 +105,268 @@ const CARDS=[
 ["קווירי","חולות","טייס","חגיגה","מלכה","לוב","ספא","נעליים"]
 ];
 
-const RED="#C8352A", GREEN="#1a9668", BLUE="#1A6FBB", ORANGE="#e8832a";
-function tc(i){return [RED,BLUE,GREEN][i]||RED;}
+const RED="#C8352A",GREEN="#1a9668",BLUE="#1A6FBB",ORANGE="#e8832a";
+function tc(i){return[RED,BLUE,GREEN][i]||RED;}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 
-let S={
-  phase:"setup",
-  teams:["🔴 קבוצה 1","🔵 קבוצה 2"],
-  scores:[0,0],
-  team:0,
-  order:shuffle([...Array(CARDS.length).keys()]),
-  pos:0,
-  ws:[0,0,0,0,0,0,0,0],
-  history:[],
-  time:60,
-  tid:null,
-  advancing:false
-};
+let S={phase:"setup",teams:["🔴 קבוצה 1","🔵 קבוצה 2"],scores:[0,0],team:0,
+  order:shuffle([...Array(CARDS.length).keys()]),pos:0,
+  ws:[0,0,0,0,0,0,0,0],history:[],time:60,tid:null,advancing:false};
 
 function curCard(){return CARDS[S.order[S.pos%CARDS.length]];}
 function cn(){return String(S.pos+1).padStart(3,"0");}
 function stopTimer(){clearInterval(S.tid);S.tid=null;}
 function allDone(){return S.ws.every(s=>s!==0);}
-function turnScore(){
-  return S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0)+S.ws.filter(s=>s===1).length;
-}
-
-function startTimer(){
-  stopTimer();
-  S.tid=setInterval(()=>{
-    if(S.advancing)return;
-    S.time--;
-    const fill=document.getElementById("tfill");
-    const num=document.getElementById("tnum");
-    const col=S.time>20?GREEN:S.time>10?ORANGE:RED;
-    if(fill){fill.style.width=(Math.max(0,S.time)/60*100)+"%";fill.style.background=col;}
-    if(num){num.textContent=S.time;num.style.color=col;}
-    if(S.time<=3&&S.time>0){beep(880,0.15);}
-    if(S.time<=0){
-      stopTimer();
-      S.history.push({words:[...curCard()],states:[...S.ws],num:cn()});
-      S.phase="round_end";
-      render();
-    }
-  },1000);
-}
-
+function turnScore(){return S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0)+S.ws.filter(s=>s===1).length;}
 
 function beep(freq,dur){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator();
-    const g=ctx.createGain();
+    const o=ctx.createOscillator();const g=ctx.createGain();
     o.connect(g);g.connect(ctx.destination);
-    o.frequency.value=freq;
-    o.type="sine";
+    o.frequency.value=freq;o.type="sine";
     g.gain.setValueAtTime(0.4,ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
-    o.start(ctx.currentTime);
-    o.stop(ctx.currentTime+dur);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+dur);
   }catch(e){}
+}
+
+function startTimer(){
+  stopTimer();
+  S.tid=setInterval(function(){
+    if(S.advancing)return;
+    S.time--;
+    var fill=document.getElementById("tfill");
+    var num=document.getElementById("tnum");
+    var col=S.time>20?GREEN:S.time>10?ORANGE:RED;
+    if(fill){fill.style.width=(Math.max(0,S.time)/60*100)+"%";fill.style.background=col;}
+    if(num){num.textContent=S.time;num.style.color=col;}
+    if(S.time>=1&&S.time<=3){beep(880,0.15);}
+    if(S.time<=0){
+      stopTimer();
+      S.history.push({words:[].concat(curCard()),states:[].concat(S.ws),num:cn()});
+      S.phase="round_end";render();
+    }
+  },1000);
 }
 
 function advanceCard(){
   if(S.advancing)return;
   S.advancing=true;
-  S.history.push({words:[...curCard()],states:[...S.ws],num:cn()});
-  S.pos++;
-  S.ws=[0,0,0,0,0,0,0,0];
-  S.advancing=false;
+  S.history.push({words:[].concat(curCard()),states:[].concat(S.ws),num:cn()});
+  S.pos++;S.ws=[0,0,0,0,0,0,0,0];S.advancing=false;
   if(S.pos>=CARDS.length){stopTimer();S.phase="round_end";render();return;}
   render();
 }
 
+function buildHistHTML(){
+  var h2="";
+  S.history.forEach(function(h,hi){
+    var correct=h.states.filter(function(s){return s===1;}).length;
+    var wh="";
+    h.words.forEach(function(w,wi){
+      var st=h.states[wi];
+      var bg=st===1?"#e8f8f0":st===2?"#f7f7f7":"#fff0f0";
+      var fc=st===1?GREEN:st===2?"#bbb":RED;
+      wh+="<span class='wpill' style='background:"+bg+";color:"+fc+";border:1px solid #e8e8e8' onclick='toggleHist("+hi+","+wi+")'>"+w+" "+(st===1?"✅":st===2?"⏭":"❌")+"</span>";
+    });
+    h2+="<div class='hcard'><div class='hhead'><span>כרטיסייה "+h.num+"</span><span style='color:"+GREEN+";font-weight:700'>+"+correct+"</span></div><div class='hwords'>"+wh+"</div></div>";
+  });
+  return h2;
+}
+
 function render(){
-  const R=document.getElementById("root");
-  const {phase,teams,scores,team}=S;
-  const col=tc(team);
+  var R=document.getElementById("root");
+  var ph=S.phase,teams=S.teams,scores=S.scores,team=S.team;
+  var col=tc(team);
 
-  if(phase==="setup"){
-    const n=teams.length;
-    R.innerHTML='<div class="center">'
-      +'<div style="font-size:56px;margin-bottom:8px">🏳️‍🌈</div>'
-      +'<div style="font-size:32px;font-weight:800;color:'+RED+';margin-bottom:4px">גיי-ליאס</div>'
-      +'<div style="font-size:14px;color:#888;margin-bottom:24px">המהדורה הגאה של אליאס</div>'
-      +'<div class="iw"><label>🔴 שם קבוצה 1</label><input type="text" id="t0" value="'+teams[0].replace(/^.. /,"")+'" placeholder="שם הקבוצה"></div>'
-      +'<div class="iw"><label>🔵 שם קבוצה 2</label><input type="text" id="t1" value="'+teams[1].replace(/^.. /,"")+'" placeholder="שם הקבוצה"></div>'
-      +'<div class="cb-row" onclick="toggleT3()">'
-        +'<input type="checkbox" id="cb3"'+(n===3?' checked':'')+' onclick="event.stopPropagation();toggleT3()">'
-        +'<label for="cb3">➕ הוסף קבוצה שלישית</label>'
-      +'</div>'
-      +'<div class="iw" id="t3wrap" style="display:'+(n===3?'block':'none')+'">'
-        +'<label>🟢 שם קבוצה 3</label>'
-        +'<input type="text" id="t2" value="'+(n===3?teams[2].replace(/^.. /,""):"")+'" placeholder="שם הקבוצה">'
-      +'</div>'
-      +'<button class="btn" style="background:'+RED+';color:#fff;margin-top:8px" onclick="goStart()">🏳️‍🌈 בואו נשחק!</button>'
-      +'<button class="btn" style="background:#f0f0f0;color:#888;margin-top:10px;font-size:14px" onclick="S.phase=\'instructions\';render()">📋 הוראות הפעלה</button>''<div style="font-size:12px;color:#bbb;margin-top:10px;text-align:center">50 כרטיסיות · 8 מילים · 60 שניות לסיבוב</div>'
-      +'</div>';
+  if(ph==="setup"){
+    var n=teams.length;
+    var t3style=n===3?"display:block":"display:none";
+    var t3checked=n===3?" checked":"";
+    var v0=teams[0].replace(/^.. /,"");
+    var v1=teams[1].replace(/^.. /,"");
+    var v2=n===3?teams[2].replace(/^.. /,""):"";
+    R.innerHTML="<div class='center'>"
+      +"<div style='font-size:56px;margin-bottom:8px'>🏳️‍🌈</div>"
+      +"<div style='font-size:32px;font-weight:800;color:"+RED+";margin-bottom:4px'>גיי-ליאס</div>"
+      +"<div style='font-size:14px;color:#888;margin-bottom:24px'>המהדורה הגאה של אליאס</div>"
+      +"<div class='iw'><label>🔴 שם קבוצה 1</label><input type='text' id='t0' value='"+v0+"' placeholder='שם הקבוצה'></div>"
+      +"<div class='iw'><label>🔵 שם קבוצה 2</label><input type='text' id='t1' value='"+v1+"' placeholder='שם הקבוצה'></div>"
+      +"<div class='cb-row'><input type='checkbox' id='cb3'"+t3checked+" onchange='toggleT3()'><label for='cb3'>➕ הוסף קבוצה שלישית</label></div>"
+      +"<div class='iw' id='t3wrap' style='"+t3style+"'><label>🟢 שם קבוצה 3</label><input type='text' id='t2' value='"+v2+"' placeholder='שם הקבוצה'></div>"
+      +"<button class='btn' style='background:"+RED+";color:#fff;margin-top:8px' onclick='goStart()'>🏳️‍🌈 בואו נשחק!</button>"
+      +"<button class='btn' style='background:#f0f0f0;color:#555;margin-top:10px;font-size:15px' onclick='showInstructions()'>📋 הוראות הפעלה</button>"
+      +"<div style='font-size:12px;color:#bbb;margin-top:12px;text-align:center'>50 כרטיסיות · 8 מילים · 60 שניות לסיבוב</div>"
+      +"</div>";
     return;
   }
 
-
-  if(phase==="instructions"){
-    R.innerHTML='<div class="page" style="min-height:100vh;display:flex;flex-direction:column;justify-content:center">'
-      +'<div style="font-size:28px;font-weight:800;color:'+RED+';margin-bottom:18px;text-align:center">🏳️‍🌈 גיי-ליאס</div>'
-      +'<div style="background:#fff;border-radius:16px;padding:18px;border:1px solid #e8e8e8;margin-bottom:18px;font-size:15px;line-height:2">'
-        +'<div style="font-weight:700;margin-bottom:8px">📋 הוראות הפעלה</div>'
-        +'<div style="margin-bottom:10px">כל סיבוב — קבוצה אחת מקבלת את הטאבלט. אחד מהם הוא המקריא, השאר מנחשים.</div>'
-        +'<div style="margin-bottom:6px"><span style="color:'+GREEN+';font-weight:700">לחיצה אחת</span> = ✅ ניחשו — נקודה!</div>'
-        +'<div style="margin-bottom:6px"><span style="color:#bbb;font-weight:700">לחיצה שנייה</span> = ⏭ דלג — בלי נקודה</div>'
-        +'<div style="margin-bottom:10px"><span style="color:#888;font-weight:700">לחיצה שלישית</span> = ↩ חזרה למילה</div>'
-        +'<div style="margin-bottom:10px">כשכל 8 המילים מסומנות — הכרטיסייה מתחלפת אוטומטית והזמן ממשיך לרוץ.</div>'
-        +'<div style="margin-bottom:10px">כשנגמרות 60 השניות מופיע סיכום. ניתן לתקן לפני האישור, ואז מעבירים את הטאבלט לקבוצה הבאה.</div>'
-        +'<div style="font-weight:700">🏆 המנצחים — הקבוצה עם הכי הרבה נקודות אחרי 50 כרטיסיות</div>'
-      +'</div>'
-      +'<button class="btn" style="background:'+RED+';color:#fff" onclick="S.phase='setup';render()">← חזרה להגדרות</button>'
-      +'</div>';
+  if(ph==="instructions"){
+    R.innerHTML="<div class='page' style='min-height:100vh;display:flex;flex-direction:column;justify-content:center'>"
+      +"<div style='font-size:26px;font-weight:800;color:"+RED+";margin-bottom:18px;text-align:center'>🏳️‍🌈 גיי-ליאס</div>"
+      +"<div style='background:#fff;border-radius:16px;padding:18px;border:1px solid #e8e8e8;margin-bottom:16px'>"
+        +"<div style='font-weight:700;font-size:16px;margin-bottom:14px'>📋 הוראות הפעלה</div>"
+        +"<div class='instr-row'><div class='instr-icon'>👥</div><div>כל סיבוב — קבוצה אחת מקבלת את הטאבלט. אחד מהם הוא המקריא, השאר מנחשים.</div></div>"
+        +"<div class='instr-row'><div class='instr-icon' style='color:"+GREEN+"'>✅</div><div><strong>לחיצה אחת</strong> — ניחשו! נקודה לקבוצה.</div></div>"
+        +"<div class='instr-row'><div class='instr-icon'>⏭</div><div><strong>לחיצה שנייה</strong> — דלג, בלי נקודה.</div></div>"
+        +"<div class='instr-row'><div class='instr-icon'>↩</div><div><strong>לחיצה שלישית</strong> — חזרה למילה.</div></div>"
+        +"<div class='instr-row'><div class='instr-icon'>⚡</div><div>כשכל 8 המילים מסומנות — הכרטיסייה מתחלפת אוטומטית והזמן ממשיך לרוץ.</div></div>"
+        +"<div class='instr-row'><div class='instr-icon'>⏰</div><div>כשנגמרות 60 השניות מופיע סיכום. ניתן לתקן לפני האישור, ואז מעבירים את הטאבלט לקבוצה הבאה.</div></div>"
+        +"<div class='instr-row'><div class='instr-icon'>🏆</div><div><strong>המנצחים</strong> — הקבוצה עם הכי הרבה נקודות אחרי 50 כרטיסיות.</div></div>"
+      +"</div>"
+      +"<button class='btn' style='background:#f0f0f0;color:#555' onclick='goBack()'>← חזרה להגדרות</button>"
+      +"</div>";
     return;
   }
 
-  if(phase==="pre_round"){
-    R.innerHTML='<div class="page" style="display:flex;flex-direction:column;min-height:100vh;justify-content:center">'
-      +'<div class="srow">'+teams.map((n,i)=>'<div class="score-box" style="background:'+(i===team?tc(i):"#e8e8e8")+';color:'+(i===team?"#fff":"#777")+'">'
-        +'<div class="score-name">'+n+'</div><div class="score-num">'+scores[i]+'</div></div>').join("")+'</div>'
-      +'<div class="pbox">'
-        +'<div style="font-size:14px;color:#888;margin-bottom:8px">📱 העבר את הטאבלט אל המקריא של</div>'
-        +'<div style="font-size:30px;font-weight:800;color:'+col+';margin-bottom:8px">'+teams[team]+'</div>'
-        +'<div style="font-size:13px;color:#888">המקריא מסביר — הצוות מנחש</div>'
-      +'</div>'
-      +'<div style="text-align:center;font-size:13px;color:#bbb;margin-bottom:18px">כרטיסייה '+(S.pos+1)+' מתוך '+CARDS.length+'</div>'
-      +'<button class="btn" style="background:'+col+';color:#fff" onclick="startRound()">▶ התחל סיבוב!</button>'
-      +'</div>';
+  if(ph==="pre_round"){
+    var sb=teams.map(function(n,i){return "<div class='sbox' style='background:"+(i===team?col:"#e8e8e8")+";color:"+(i===team?"#fff":"#777")+"'><div class='sname'>"+n+"</div><div class='snum'>"+scores[i]+"</div></div>";}).join("");
+    R.innerHTML="<div class='page' style='display:flex;flex-direction:column;min-height:100vh;justify-content:center'>"
+      +"<div class='srow'>"+sb+"</div>"
+      +"<div class='pbox'>"
+        +"<div style='font-size:14px;color:#888;margin-bottom:8px'>📱 העבר את הטאבלט אל המקריא של</div>"
+        +"<div style='font-size:30px;font-weight:800;color:"+col+";margin-bottom:8px'>"+teams[team]+"</div>"
+        +"<div style='font-size:13px;color:#888'>המקריא מסביר — הצוות מנחש</div>"
+      +"</div>"
+      +"<div style='text-align:center;font-size:13px;color:#bbb;margin-bottom:18px'>כרטיסייה "+(S.pos+1)+" מתוך "+CARDS.length+"</div>"
+      +"<button class='btn' style='background:"+col+";color:#fff' onclick='startRound()'>▶ התחל סיבוב!</button>"
+      +"</div>";
     return;
   }
 
-  if(phase==="playing"){
-    const words=curCard();
-    const pct=Math.max(0,S.time/60*100);
-    const tcol=S.time>20?GREEN:S.time>10?ORANGE:RED;
-    const skips=S.history.reduce((a,h)=>a+h.states.filter(s=>s===2).length,0)+S.ws.filter(s=>s===2).length;
-    let rows="";
-    words.forEach((w,i)=>{
-      const st=S.ws[i];
-      const bg=st===1?"#f0fdf8":st===2?"#f7f7f7":"#fff";
-      const bc=st===1?GREEN:st===2?"#bbb":RED;
-      const tc2=st===1?GREEN:st===2?"#bbb":"#111";
-      const td=st===2?"line-through":"none";
-      const icon=st===0?String(i+1):st===1?"✓":"⏭";
-      rows+='<div class="wrow" id="wr'+i+'" onclick="tapWord('+i+')" style="background:'+bg+'">'
-        +'<div class="badge" id="b'+i+'" style="background:'+bc+'">'+icon+'</div>'
-        +'<span class="wtxt" id="wt'+i+'" style="color:'+tc2+';text-decoration:'+td+'">'+w+'</span>'
-        +'</div>';
+  if(ph==="playing"){
+    var words=curCard();
+    var pct=Math.max(0,S.time/60*100);
+    var tcol=S.time>20?GREEN:S.time>10?ORANGE:RED;
+    var skips=S.history.reduce(function(a,h){return a+h.states.filter(function(s){return s===2;}).length;},0)+S.ws.filter(function(s){return s===2;}).length;
+    var rows="";
+    words.forEach(function(w,i){
+      var st=S.ws[i];
+      var bg=st===1?"#f0fdf8":st===2?"#f7f7f7":"#fff";
+      var bc=st===1?GREEN:st===2?"#bbb":RED;
+      var icon=st===0?String(i+1):st===1?"✓":"⏭";
+      var tc2=st===1?GREEN:st===2?"#bbb":"#111";
+      var td=st===2?"line-through":"none";
+      rows+="<div class='wrow' id='wr"+i+"' onclick='tapWord("+i+")' style='background:"+bg+"'>"
+        +"<div class='badge' id='b"+i+"' style='background:"+bc+"'>"+icon+"</div>"
+        +"<span class='wtxt' id='wt"+i+"' style='color:"+tc2+";text-decoration:"+td+"'>"+w+"</span>"
+        +"</div>";
     });
-    R.innerHTML='<div class="page">'
-      +'<div class="tbar"><div id="tfill" class="tfill" style="width:'+pct+'%;background:'+tcol+'"></div></div>'
-      +'<div class="hdr">'
-        +'<button class="btn-sm" style="background:#eee" onclick="endRound()">⏹ סיים</button>'
-        +'<span class="pill" style="color:'+GREEN+'">✅ <span id="cnt">'+turnScore()+'</span></span>'
-        +'<span class="pill" style="color:#bbb">⏭ <span id="skcnt">'+skips+'</span></span>'
-        +'<div style="font-size:26px;font-weight:800;min-width:40px;text-align:center;color:'+tcol+'" id="tnum">'+S.time+'</div>'
-      +'</div>'
-      +'<div style="font-size:11px;color:#bbb;text-align:center;margin-bottom:7px">כרטיסייה '+(S.pos+1)+'</div>'
-      +'<div class="card">'+rows+'<div class="cnum">'+cn()+'</div></div>'
-      +'<div style="font-size:11px;color:#bbb;text-align:center;margin-top:8px">לחיצה ✅ · שוב ⏭ דלג · שוב ביטול</div>'
-      +'</div>';
+    R.innerHTML="<div class='page'>"
+      +"<div class='tbar'><div id='tfill' class='tfill' style='width:"+pct+"%;background:"+tcol+"'></div></div>"
+      +"<div class='hdr'>"
+        +"<button class='btn-sm' onclick='endRound()'>⏹ סיים</button>"
+        +"<span class='pill' style='color:"+GREEN+"'>✅ <span id='cnt'>"+turnScore()+"</span></span>"
+        +"<span class='pill' style='color:#bbb'>⏭ <span id='skcnt'>"+skips+"</span></span>"
+        +"<div id='tnum' style='font-size:26px;font-weight:800;min-width:40px;text-align:center;color:"+tcol+"'>"+S.time+"</div>"
+      +"</div>"
+      +"<div style='font-size:11px;color:#bbb;text-align:center;margin-bottom:7px'>כרטיסייה "+(S.pos+1)+"</div>"
+      +"<div class='card'>"+rows+"<div class='cnum'>"+cn()+"</div></div>"
+      +"<div style='font-size:11px;color:#bbb;text-align:center;margin-top:8px'>לחיצה ✅ · שוב ⏭ דלג · שוב ↩ ביטול</div>"
+      +"</div>";
     return;
   }
 
-  if(phase==="round_end"){
-    const total=S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0);
-    let histHTML="";
-    S.history.forEach((h,hi)=>{
-      const correct=h.states.filter(s=>s===1).length;
-      let whtml="";
-      h.words.forEach((w,wi)=>{
-        const st=h.states[wi];
-        const bg=st===1?"#e8f8f0":st===2?"#f7f7f7":"#fff0f0";
-        const fc=st===1?GREEN:st===2?"#bbb":RED;
-        whtml+='<span class="wpill" style="background:'+bg+';color:'+fc+';border:1px solid #e8e8e8" onclick="toggleHist('+hi+','+wi+')">'+w+' '+(st===1?"✅":st===2?"⏭":"❌")+'</span>';
-      });
-      histHTML+='<div class="hcard"><div class="hhead"><span>כרטיסייה '+h.num+'</span><span style="color:'+GREEN+';font-weight:700">+'+correct+'</span></div><div class="hwords">'+whtml+'</div></div>';
-    });
-    R.innerHTML='<div class="page">'
-      +'<div style="text-align:center;padding:10px 0 6px">'
-        +'<div style="font-size:13px;color:#888">סיום תור · '+teams[team]+'</div>'
-        +'<div id="tpts" style="font-size:56px;font-weight:900;color:'+col+';line-height:1.15">'+total+'</div>'
-        +'<div style="font-size:13px;color:#888">נקודות (לחץ מילה לתיקון)</div>'
-      +'</div>'
-      +histHTML
-      +'<button class="btn" style="background:'+col+';color:#fff;margin-top:4px" onclick="confirmRound()">📱 אשר והעבר לקבוצה הבאה ←</button>'
-      +'</div>';
+  if(ph==="round_end"){
+    var total=S.history.reduce(function(a,h){return a+h.states.filter(function(s){return s===1;}).length;},0);
+    R.innerHTML="<div class='page'>"
+      +"<div style='text-align:center;padding:10px 0 6px'>"
+        +"<div style='font-size:13px;color:#888'>סיום תור · "+teams[team]+"</div>"
+        +"<div id='tpts' style='font-size:56px;font-weight:900;color:"+col+";line-height:1.15'>"+total+"</div>"
+        +"<div style='font-size:13px;color:#888'>נקודות (לחץ מילה לתיקון)</div>"
+      +"</div>"
+      +buildHistHTML()
+      +"<button class='btn' style='background:"+col+";color:#fff;margin-top:4px' onclick='confirmRound()'>📱 אשר והעבר לקבוצה הבאה ←</button>"
+      +"</div>";
     return;
   }
 
-  if(phase==="final"){
-    const maxScore=Math.max(...scores);
-    const winners=teams.filter((_,i)=>scores[i]===maxScore);
-    const tie=winners.length>1;
-    R.innerHTML='<div class="center">'
-      +'<div style="font-size:72px;margin-bottom:8px">'+(tie?"🤝":"🏆")+'</div>'
-      +'<div style="font-size:30px;font-weight:800;color:'+(tie?"#555":tc(scores.indexOf(maxScore)))+';margin-bottom:4px">'+(tie?"תיקו!":winners[0]+" ניצחו!")+'</div>'
-      +'<div class="srow" style="margin:22px 0;width:100%">'+teams.map((n,i)=>'<div class="score-box" style="background:'+tc(i)+';color:#fff;opacity:'+(scores[i]===maxScore?1:.6)+'">'
-        +'<div class="score-name">'+n+'</div><div class="score-num">'+scores[i]+'</div></div>').join("")+'</div>'
-      +'<button class="btn" style="background:'+RED+';color:#fff" onclick="restart()">🌈 משחק חדש</button>'
-      +'</div>';
+  if(ph==="final"){
+    var maxScore=Math.max.apply(null,scores);
+    var winIdx=scores.indexOf(maxScore);
+    var tie=scores.filter(function(s){return s===maxScore;}).length>1;
+    var sb2=teams.map(function(n,i){return "<div class='sbox' style='background:"+tc(i)+";color:#fff;opacity:"+(scores[i]===maxScore?1:0.6)+"'><div class='sname'>"+n+"</div><div class='snum'>"+scores[i]+"</div></div>";}).join("");
+    R.innerHTML="<div class='center'>"
+      +"<div style='font-size:72px;margin-bottom:8px'>"+(tie?"🤝":"🏆")+"</div>"
+      +"<div style='font-size:30px;font-weight:800;color:"+(tie?"#555":tc(winIdx))+";margin-bottom:4px'>"+(tie?"תיקו!":teams[winIdx]+" ניצחו!")+"</div>"
+      +"<div class='srow' style='margin:22px 0;width:100%'>"+sb2+"</div>"
+      +"<button class='btn' style='background:"+RED+";color:#fff' onclick='restart()'>🌈 משחק חדש</button>"
+      +"</div>";
     return;
   }
 }
 
+window.goBack=function(){S.phase="setup";render();};
+window.showInstructions=function(){S.phase="instructions";render();};
+
 window.toggleT3=function(){
-  const cb=document.getElementById("cb3");
-  if(!cb)return;
-  const wrap=document.getElementById("t3wrap");
-  if(wrap)wrap.style.display=cb.checked?"block":"none";
+  var cb=document.getElementById("cb3");
+  var wrap=document.getElementById("t3wrap");
+  if(wrap)wrap.style.display=cb&&cb.checked?"block":"none";
 };
 
 window.goStart=function(){
-  const v0=document.getElementById("t0").value||"קבוצה 1";
-  const v1=document.getElementById("t1").value||"קבוצה 2";
-  const cb=document.getElementById("cb3");
+  var v0=document.getElementById("t0").value||"קבוצה 1";
+  var v1=document.getElementById("t1").value||"קבוצה 2";
+  var cb=document.getElementById("cb3");
   S.teams=["🔴 "+v0,"🔵 "+v1];
-  if(cb&&cb.checked){
-    const v2=document.getElementById("t2").value||"קבוצה 3";
-    S.teams.push("🟢 "+v2);
-  }
-  S.scores=S.teams.map(()=>0);
-  S.phase="pre_round";
-  render();
+  if(cb&&cb.checked){S.teams.push("🟢 "+(document.getElementById("t2").value||"קבוצה 3"));}
+  S.scores=S.teams.map(function(){return 0;});
+  S.phase="pre_round";render();
 };
 
 window.startRound=function(){
-  S.ws=[0,0,0,0,0,0,0,0];
-  S.history=[];
-  S.time=60;
-  S.advancing=false;
-  S.phase="playing";
-  render();
-  startTimer();
+  S.ws=[0,0,0,0,0,0,0,0];S.history=[];S.time=60;S.advancing=false;
+  S.phase="playing";render();startTimer();
 };
 
 window.endRound=function(){
   stopTimer();
-  S.history.push({words:[...curCard()],states:[...S.ws],num:cn()});
-  S.phase="round_end";
-  render();
+  S.history.push({words:[].concat(curCard()),states:[].concat(S.ws),num:cn()});
+  S.phase="round_end";render();
 };
 
 window.tapWord=function(i){
   if(S.phase!=="playing"||S.advancing)return;
   S.ws[i]=(S.ws[i]+1)%3;
-  const st=S.ws[i];
-  const bg=st===1?"#f0fdf8":st===2?"#f7f7f7":"#fff";
-  const bc=st===1?GREEN:st===2?"#bbb":RED;
-  const icon=st===0?String(i+1):st===1?"✓":"⏭";
-  const row=document.getElementById("wr"+i);
-  const badge=document.getElementById("b"+i);
-  const txt=document.getElementById("wt"+i);
-  const cnt=document.getElementById("cnt");
-  const skcnt=document.getElementById("skcnt");
+  var st=S.ws[i];
+  var bg=st===1?"#f0fdf8":st===2?"#f7f7f7":"#fff";
+  var bc=st===1?GREEN:st===2?"#bbb":RED;
+  var icon=st===0?String(i+1):st===1?"✓":"⏭";
+  var row=document.getElementById("wr"+i);
+  var badge=document.getElementById("b"+i);
+  var txt=document.getElementById("wt"+i);
+  var cnt=document.getElementById("cnt");
+  var skcnt=document.getElementById("skcnt");
   if(row)row.style.background=bg;
   if(badge){badge.style.background=bc;badge.textContent=icon;}
   if(txt){txt.style.color=st===1?GREEN:st===2?"#bbb":"#111";txt.style.textDecoration=st===2?"line-through":"none";}
-  const skips=S.history.reduce((a,h)=>a+h.states.filter(s=>s===2).length,0)+S.ws.filter(s=>s===2).length;
+  var skips=S.history.reduce(function(a,h){return a+h.states.filter(function(s){return s===2;}).length;},0)+S.ws.filter(function(s){return s===2;}).length;
   if(cnt)cnt.textContent=turnScore();
   if(skcnt)skcnt.textContent=skips;
   if(allDone())setTimeout(advanceCard,420);
 };
 
 window.toggleHist=function(hi,wi){
-  const h=S.history[hi];
+  var h=S.history[hi];
   h.states[wi]=h.states[wi]===1?2:1;
-  const total=S.history.reduce((a,h2)=>a+h2.states.filter(s=>s===1).length,0);
-  const pt=document.getElementById("tpts");
+  var total=S.history.reduce(function(a,h2){return a+h2.states.filter(function(s){return s===1;}).length;},0);
+  var pt=document.getElementById("tpts");
   if(pt)pt.textContent=total;
-  const col=tc(S.team);
-  let histHTML="";
-  S.history.forEach((h2,hi2)=>{
-    const correct=h2.states.filter(s=>s===1).length;
-    let whtml="";
-    h2.words.forEach((w,wi2)=>{
-      const st=h2.states[wi2];
-      const bg=st===1?"#e8f8f0":"#f7f7f7";
-      const fc=st===1?GREEN:"#bbb";
-      whtml+='<span class="wpill" style="background:'+bg+';color:'+fc+';border:1px solid #e8e8e8" onclick="toggleHist('+hi2+','+wi2+')">'+w+' '+(st===1?"✅":"⏭")+'</span>';
-    });
-    histHTML+='<div class="hcard"><div class="hhead"><span>כרטיסייה '+h2.num+'</span><span style="color:'+GREEN+';font-weight:700">+'+correct+'</span></div><div class="hwords">'+whtml+'</div></div>';
-  });
-  const R=document.getElementById("root");
-  R.innerHTML='<div class="page">'
-    +'<div style="text-align:center;padding:10px 0 6px">'
-      +'<div style="font-size:13px;color:#888">סיום תור · '+S.teams[S.team]+'</div>'
-      +'<div id="tpts" style="font-size:56px;font-weight:900;color:'+col+';line-height:1.15">'+total+'</div>'
-      +'<div style="font-size:13px;color:#888">נקודות (לחץ מילה לתיקון)</div>'
-    +'</div>'
-    +histHTML
-    +'<button class="btn" style="background:'+col+';color:#fff;margin-top:4px" onclick="confirmRound()">📱 אשר והעבר לקבוצה הבאה ←</button>'
-    +'</div>';
+  document.getElementById("root").innerHTML="<div class='page'>"
+    +"<div style='text-align:center;padding:10px 0 6px'>"
+      +"<div style='font-size:13px;color:#888'>סיום תור · "+S.teams[S.team]+"</div>"
+      +"<div id='tpts' style='font-size:56px;font-weight:900;color:"+tc(S.team)+";line-height:1.15'>"+total+"</div>"
+      +"<div style='font-size:13px;color:#888'>נקודות (לחץ מילה לתיקון)</div>"
+    +"</div>"
+    +buildHistHTML()
+    +"<button class='btn' style='background:"+tc(S.team)+";color:#fff;margin-top:4px' onclick='confirmRound()'>📱 אשר והעבר לקבוצה הבאה ←</button>"
+    +"</div>";
 };
 
 window.confirmRound=function(){
-  const pts=S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0);
+  var pts=S.history.reduce(function(a,h){return a+h.states.filter(function(s){return s===1;}).length;},0);
   S.scores[S.team]+=pts;
   S.pos++;
   if(S.pos>=CARDS.length){S.phase="final";}
@@ -411,8 +375,8 @@ window.confirmRound=function(){
 };
 
 window.restart=function(){
-  S={phase:"setup",teams:S.teams,scores:S.teams.map(()=>0),team:0,
-    order:shuffle([...Array(CARDS.length).keys()]),pos:0,
+  S={phase:"setup",teams:S.teams,scores:S.teams.map(function(){return 0;}),team:0,
+    order:shuffle([].concat(Array.from({length:CARDS.length},function(_,i){return i;}))),pos:0,
     ws:[0,0,0,0,0,0,0,0],history:[],time:60,tid:null,advancing:false};
   render();
 };
@@ -421,9 +385,7 @@ render();
 </script>
 <script>
 if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>{
-    navigator.serviceWorker.register("sw.js").catch(()=>{});
-  });
+  window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});
 }
 </script>
 </body>
