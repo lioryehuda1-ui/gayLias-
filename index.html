@@ -139,6 +139,7 @@ function startTimer(){
     const col=S.time>20?GREEN:S.time>10?ORANGE:RED;
     if(fill){fill.style.width=(Math.max(0,S.time)/60*100)+"%";fill.style.background=col;}
     if(num){num.textContent=S.time;num.style.color=col;}
+    if(S.time<=3&&S.time>0){beep(880,0.15);}
     if(S.time<=0){
       stopTimer();
       S.history.push({words:[...curCard()],states:[...S.ws],num:cn()});
@@ -146,6 +147,22 @@ function startTimer(){
       render();
     }
   },1000);
+}
+
+
+function beep(freq,dur){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=freq;
+    o.type="sine";
+    g.gain.setValueAtTime(0.4,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime+dur);
+  }catch(e){}
 }
 
 function advanceCard(){
@@ -181,7 +198,26 @@ function render(){
         +'<input type="text" id="t2" value="'+(n===3?teams[2].replace(/^.. /,""):"")+'" placeholder="שם הקבוצה">'
       +'</div>'
       +'<button class="btn" style="background:'+RED+';color:#fff;margin-top:8px" onclick="goStart()">🏳️‍🌈 בואו נשחק!</button>'
-      +'<div style="font-size:12px;color:#bbb;margin-top:14px;text-align:center">50 כרטיסיות · 8 מילים · 60 שניות לסיבוב</div>'
+      +'<button class="btn" style="background:#f0f0f0;color:#888;margin-top:10px;font-size:14px" onclick="S.phase=\'instructions\';render()">📋 הוראות הפעלה</button>''<div style="font-size:12px;color:#bbb;margin-top:10px;text-align:center">50 כרטיסיות · 8 מילים · 60 שניות לסיבוב</div>'
+      +'</div>';
+    return;
+  }
+
+
+  if(phase==="instructions"){
+    R.innerHTML='<div class="page" style="min-height:100vh;display:flex;flex-direction:column;justify-content:center">'
+      +'<div style="font-size:28px;font-weight:800;color:'+RED+';margin-bottom:18px;text-align:center">🏳️‍🌈 גיי-ליאס</div>'
+      +'<div style="background:#fff;border-radius:16px;padding:18px;border:1px solid #e8e8e8;margin-bottom:18px;font-size:15px;line-height:2">'
+        +'<div style="font-weight:700;margin-bottom:8px">📋 הוראות הפעלה</div>'
+        +'<div style="margin-bottom:10px">כל סיבוב — קבוצה אחת מקבלת את הטאבלט. אחד מהם הוא המקריא, השאר מנחשים.</div>'
+        +'<div style="margin-bottom:6px"><span style="color:'+GREEN+';font-weight:700">לחיצה אחת</span> = ✅ ניחשו — נקודה!</div>'
+        +'<div style="margin-bottom:6px"><span style="color:#bbb;font-weight:700">לחיצה שנייה</span> = ⏭ דלג — בלי נקודה</div>'
+        +'<div style="margin-bottom:10px"><span style="color:#888;font-weight:700">לחיצה שלישית</span> = ↩ חזרה למילה</div>'
+        +'<div style="margin-bottom:10px">כשכל 8 המילים מסומנות — הכרטיסייה מתחלפת אוטומטית והזמן ממשיך לרוץ.</div>'
+        +'<div style="margin-bottom:10px">כשנגמרות 60 השניות מופיע סיכום. ניתן לתקן לפני האישור, ואז מעבירים את הטאבלט לקבוצה הבאה.</div>'
+        +'<div style="font-weight:700">🏆 המנצחים — הקבוצה עם הכי הרבה נקודות אחרי 50 כרטיסיות</div>'
+      +'</div>'
+      +'<button class="btn" style="background:'+RED+';color:#fff" onclick="S.phase='setup';render()">← חזרה להגדרות</button>'
       +'</div>';
     return;
   }
