@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#C8352A">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>גיי-ליאס 🏳️‍🌈</title>
+<title>גיי-ליאס</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:Arial,sans-serif;background:#f4f4f4;min-height:100vh}
@@ -103,17 +103,18 @@ const CARDS=[
 ];
 
 // word states: 0=neutral, 1=guessed✅, 2=skipped⏭
-const RED="#C8352A", GREEN="#1a9668", GRAY="#999", BLUE="#1A6FBB";
+const RED="#C8352A", GREEN="#1a9668", GRAY="#999", BLUE="#1A6FBB", TGREEN="#1a7a3a";
 const STATE_COLOR=[RED, GREEN, GRAY];
 const STATE_ICON=["","✓","⏭"];
 
-function tc(i){return i===0?RED:BLUE;}
+function tc(i){return i===0?RED:i===1?BLUE:TGREEN;}
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 
 let S={
   phase:"setup",
   teams:["🔴 קבוצה 1","🔵 קבוצה 2"],
   scores:[0,0],
+  numTeams:2,
   team:0,
   order:shuffle([...Array(CARDS.length).keys()]),
   pos:0,
@@ -292,14 +293,16 @@ ${histHTML}
   }
 
   if(phase==="final"){
-    const w=scores[0]>scores[1]?0:scores[1]>scores[0]?1:-1;
+    const maxS=Math.max(...scores);
+    const winners=scores.map((s,i)=>s===maxS?i:-1).filter(i=>i>=0);
+    const w=winners.length===1?winners[0]:-1;
     R.innerHTML=`<div class="center">
 <div style="font-size:72px;margin-bottom:8px">${w>=0?"🏆":"🤝"}</div>
 <div style="font-size:30px;font-weight:800;color:${w>=0?tc(w):"#555"};margin-bottom:4px">
   ${w>=0?teams[w]+" ניצחו!":"תיקו!"}
 </div>
-<div class="scores-row" style="margin:22px 0;width:100%">
-  ${teams.map((n,i)=>`<div class="team-score" style="background:${tc(i)};color:#fff;opacity:${w>=0&&w!==i?.6:1}">
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:22px 0;width:100%;justify-content:center">
+  ${teams.map((n,i)=>`<div class="team-score" style="background:${tc(i)};color:#fff;opacity:${w>=0&&w!==i?.6:1};min-width:80px">
     <div class="score-name">${n}</div><div class="score-num">${scores[i]}</div>
   </div>`).join("")}
 </div>
@@ -309,9 +312,18 @@ ${histHTML}
   }
 }
 
+window.toggleTeam3=function(){
+  const cb=document.getElementById("enable3");
+  document.getElementById("team3-wrap").style.display=cb.checked?"block":"none";
+};
 window.goStart=function(){
+  const cb=document.getElementById("enable3");
+  const use3=cb&&cb.checked;
   S.teams=["🔴 "+(document.getElementById("t0").value||"קבוצה 1"),
             "🔵 "+(document.getElementById("t1").value||"קבוצה 2")];
+  if(use3) S.teams.push("🟢 "+(document.getElementById("t2").value||"קבוצה 3"));
+  S.scores=S.teams.map(()=>0);
+  S.numTeams=S.teams.length;
   S.phase="pre_round"; render();
 };
 
@@ -391,13 +403,14 @@ window.confirmRound=function(){
   const pts=S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).length,0);
   S.scores[S.team]+=pts;
   const np=S.pos+1;
-  if(np>=CARDS.length){S.scores;S.phase="final";}
-  else{S.pos=np;S.team=1-S.team;S.phase="pre_round";}
+  const nt=S.teams.length;
+  if(np>=CARDS.length){S.phase="final";}
+  else{S.pos=np;S.team=(S.team+1)%nt;S.phase="pre_round";}
   render();
 };
 
 window.restart=function(){
-  S={phase:"pre_round",teams:S.teams,scores:[0,0],team:0,
+  S={phase:"pre_round",teams:S.teams,scores:S.teams.map(()=>0),numTeams:S.teams.length,team:0,
     order:shuffle([...Array(CARDS.length).keys()]),pos:0,
     ws:[0,0,0,0,0,0,0,0],history:[],time:60,tid:null,advancing:false};
   render();
