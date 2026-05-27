@@ -114,6 +114,7 @@ let S={
   phase:"setup",
   teams:["🔴 קבוצה 1","🔵 קבוצה 2"],
   scores:[0,0],
+  numTeams:2,
   team:0,
   order:shuffle([...Array(CARDS.length).keys()]),
   pos:0,
@@ -200,15 +201,23 @@ function render(){
 <div style="font-size:14px;color:#888;margin-bottom:26px">המהדורה הגאה של אליאס</div>
 <div class="input-wrap">
   <label>🔴 שם קבוצה 1</label>
-  <input id="t0" value="${S.teams[0].replace(/^.. /,"")}" placeholder="שם הקבוצה">
+  <input id="t0" value="${S.teams[0]?S.teams[0].replace(/^.. /,""):""}" placeholder="שם הקבוצה">
 </div>
 <div class="input-wrap">
   <label>🔵 שם קבוצה 2</label>
-  <input id="t1" value="${S.teams[1].replace(/^.. /,"")}" placeholder="שם הקבוצה">
+  <input id="t1" value="${S.teams[1]?S.teams[1].replace(/^.. /,""):""}" placeholder="שם הקבוצה">
+</div>
+<div class="input-wrap" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+  <input type="checkbox" id="enable3" onchange="toggleTeam3()" style="width:20px;height:20px;cursor:pointer">
+  <label for="enable3" style="font-size:14px;color:#888;cursor:pointer">➕ הוסף קבוצה שלישית</label>
+</div>
+<div class="input-wrap" id="team3-wrap" style="display:none">
+  <label>🟢 שם קבוצה 3</label>
+  <input id="t2" value="" placeholder="שם הקבוצה">
 </div>
 <button class="btn" style="background:${RED};color:#fff;margin-top:6px" onclick="goStart()">🏳️‍🌈 בואו נשחק!</button>
 <div style="font-size:12px;color:#bbb;margin-top:16px;text-align:center">50 כרטיסיות · 8 מילים · 60 שניות לסיבוב</div>
-</div>`;
+</div>\`;
     return;
   }
 
@@ -311,10 +320,18 @@ ${histHTML}
   }
 }
 
+window.toggleTeam3=function(){
+  const cb=document.getElementById("enable3");
+  document.getElementById("team3-wrap").style.display=cb.checked?"block":"none";
+};
 window.goStart=function(){
+  const cb=document.getElementById("enable3");
+  const use3=cb&&cb.checked;
   S.teams=["🔴 "+(document.getElementById("t0").value||"קבוצה 1"),
             "🔵 "+(document.getElementById("t1").value||"קבוצה 2")];
-  S.scores=[0,0];
+  if(use3) S.teams.push("🟢 "+(document.getElementById("t2").value||"קבוצה 3"));
+  S.scores=S.teams.map(()=>0);
+  S.numTeams=S.teams.length;
   S.phase="pre_round"; render();
 };
 
@@ -401,7 +418,7 @@ window.confirmRound=function(){
 };
 
 window.restart=function(){
-  S={phase:"pre_round",teams:S.teams,scores:[0,0],team:0,
+  S={phase:"pre_round",teams:S.teams,scores:S.teams.map(()=>0),numTeams:S.teams.length,team:0,
     order:shuffle([...Array(CARDS.length).keys()]),pos:0,
     ws:[0,0,0,0,0,0,0,0],history:[],time:60,tid:null,advancing:false};
   render();
