@@ -122,8 +122,11 @@ function turnScore(){return S.history.reduce((a,h)=>a+h.states.filter(s=>s===1).
 function beep(){
   try{
     var a=document.getElementById("siren-audio");
-    if(a){a.currentTime=0;a.play();}
+    if(a){a.currentTime=0;a.play();setTimeout(function(){a.pause();a.currentTime=0;},4000);}
   }catch(e){}
+}
+function stopSiren(){
+  try{var a=document.getElementById("siren-audio");if(a){a.pause();a.currentTime=0;}}catch(e){}
 }
 
 function startTimer(){
@@ -150,7 +153,7 @@ function advanceCard(){
   S.advancing=true;
   S.history.push({words:[].concat(curCard()),states:[].concat(S.ws),num:cn()});
   S.pos++;S.ws=[0,0,0,0,0,0,0,0];S.advancing=false;
-  if(S.pos>=CARDS.length){stopTimer();S.phase="round_end";render();return;}
+  if(S.pos>=CARDS.length){stopTimer();stopSiren();S.phase="round_end";render();return;}
   render();
 }
 
@@ -317,7 +320,7 @@ window.startRound=function(){
 };
 
 window.endRound=function(){
-  stopTimer();
+  stopTimer();stopSiren();
   S.history.push({words:[].concat(curCard()),states:[].concat(S.ws),num:cn()});
   S.phase="round_end";render();
 };
